@@ -1,0 +1,24 @@
+services:
+  backend:
+    build: ./backend
+    container_name: financialcloud-backend
+    restart: unless-stopped
+    ports:
+      - "8001:8001"          # 将宿主机 8001 映射到容器 8001
+    environment:
+      KUBECONFIG_PATH: /app/kubeconfig.yaml
+    volumes:
+      - ./backend/data.sqlite3:/app/data.sqlite3
+      - ./backend/uploads:/app/uploads
+      # - /etc/rancher/k3s/k3s.yaml:/app/kubeconfig.yaml:ro
+  frontend:
+    build: ./frontend
+    container_name: financialcloud-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"              # 将宿主机 80 映射到容器 80
+    depends_on:
+      - backend
+    environment:
+      BACKEND_HOST: backend
+      BACKEND_PORT: 8001

@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ld-999
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: financialcloud-backend
+  namespace: ld-999
+spec:
+  type: NodePort
+  selector:
+    app: financialcloud-backend
+  ports:
+  - port: 8001
+    targetPort: 8001
+    nodePort: 30086
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: financialcloud-backend
+  namespace: ld-999
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: financialcloud-backend
+  template:
+    metadata:
+      labels:
+        app: financialcloud-backend
+    spec:
+      initContainers:
+      - name: init-sqlite
+        image: alpine
+        command: ["sh", "-c", "mkdir -p /data && touch /data/data.sqlite3"]
+        volumeMounts:
+        - name: data
+          mountPath: /data
+      containers:
+      - name: backend
+        image: docker.io/library/financialcloud-backend:v3.0
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8001
+        env:
+        - name: KUBECONFIG_PATH
+          value: /app/kubeconfig.yaml
+        volumeMounts:
+        - name: data
+          mountPath: /app/data.sqlite3
+          subPath: data.sqlite3
+        - name: uploads
+          mountPath: /app/uploads
+      volumes:
+      - name: data
+        emptyDir: {}
+      - name: uploads
+        emptyDir: {}
